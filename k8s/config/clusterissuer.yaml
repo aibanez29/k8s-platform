@@ -1,0 +1,40 @@
+# Let's Encrypt via HTTP-01. The challenge is served through ingress-nginx on
+# :80, which works only because the VPS public IP answers on :80 directly —
+# there is no cloud LoadBalancer in front of it.
+#
+# Staging first: production Let's Encrypt rate-limits to 5 failures/hour/domain
+# and locks you out for the rest of the hour. Prove the flow on staging (its
+# certs are untrusted by browsers, which is fine — you are testing issuance,
+# not TLS), then flip the Ingress annotation to letsencrypt-prod.
+#
+# No `email:` field. It is optional in the ACME spec — Let's Encrypt registers the
+# account without a contact address, and cert-manager renews on its own, so the only
+# thing given up is expiry-warning mail that automated renewal makes redundant. The
+# alternative is publishing a personal address in a public repo, forever.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx

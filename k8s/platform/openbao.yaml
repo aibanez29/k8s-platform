@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openbao
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    # OpenBao, not Vault: Vault moved to BUSL in 2023 and is no longer open
+    # source. OpenBao is the MPL-2.0 fork under the Linux Foundation and is
+    # API-compatible, so the Kubernetes auth method below is unchanged.
+    repoURL: https://openbao.github.io/openbao-helm
+    chart: openbao
+    targetRevision: 0.28.4
+    helm:
+      values: |
+        server:
+          # Single node: raft/HA would be three pods pretending to be a quorum
+          # on one failure domain. Standalone + file storage is honest about it.
+          standalone:
+            enabled: true
+          dataStorage:
+            enabled: true
+            size: 2Gi
+            storageClass: local-path
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+        # ponytail: manual unseal. Every reboot, OpenBao comes up sealed and
+        # someone runs `bao operator unseal` (see docs/openbao-runbook.md).
+        # Auto-unseal on a single node is theatre: transit seal needs a second
+        # OpenBao, TPM seal needs a TPM the VPS does not expose, and static-key
+        # seal parks the master key on the disk it is meant to protect.
+        # Upgrade path: a second small box running the transit unsealer.
+        # Nothing boot-critical may depend on OpenBao — those secrets live in
+        # SealedSecrets so the cluster still comes back up on its own.
+        ui:
+          enabled: true
+        injector:
+          # Secrets reach pods via External Secrets / the CSI provider, not by
+          # mutating every pod spec with a sidecar.
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openbao
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

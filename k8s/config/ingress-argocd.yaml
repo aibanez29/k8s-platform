@@ -1,0 +1,30 @@
+# ArgoCD's own UI, served through the ingress it manages. Slightly recursive, and it
+# means a broken ingress-nginx sync locks you out of the UI you would use to fix it —
+# `kubectl -n argocd port-forward svc/argocd-server 8080:443` is the way back in.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # argocd-server terminates TLS itself, so nginx has to speak HTTPS upstream.
+    # Without this the backend answers 400 to nginx's plaintext request.
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: argocd.appsaig.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  name: https
+  tls:
+    - hosts:
+        - argocd.appsaig.dev
+      secretName: argocd-tls

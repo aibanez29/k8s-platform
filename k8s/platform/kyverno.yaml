@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    # Kyverno's CRDs are applied server-side (below), but ArgoCD diffs client-side by
+    # default. The API server defaults fields that the chart never set, so the diff
+    # never comes back clean and selfHeal re-syncs forever. Diff the same way we apply.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  source:
+    repoURL: https://kyverno.github.io/kyverno
+    chart: kyverno
+    targetRevision: 3.8.2
+    helm:
+      values: |
+        # Upstream defaults to 3 replicas of the admission controller for HA.
+        # There is one node — three replicas buy nothing and cost 2x the RAM.
+        admissionController:
+          replicas: 1
+        backgroundController:
+          replicas: 1
+        cleanupController:
+          replicas: 1
+        reportsController:
+          replicas: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

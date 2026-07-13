@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-config
+  namespace: argocd
+  annotations:
+    # Wave 1: the ClusterIssuer is a cert-manager CRD, so cert-manager (wave 0)
+    # has to be up and have registered its CRDs before this can apply.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/aibanez29/k8s-platform.git
+    targetRevision: main
+    path: k8s/config
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

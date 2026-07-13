@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: headlamp
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/headlamp/
+    chart: headlamp
+    targetRevision: 0.43.0
+    helm:
+      values: |
+        # Headlamp authenticates with a ServiceAccount token you paste in — there is no
+        # anonymous access. It is still, in effect, kubectl behind a login form: whoever
+        # holds an admin token holds the cluster. Exposed here deliberately; revoke by
+        # deleting the SA's token secret, not by hoping nobody finds the URL.
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+          hosts:
+            - host: k8s.appsaig.dev
+              paths:
+                - path: /
+                  type: Prefix
+          tls:
+            - secretName: headlamp-tls
+              hosts:
+                - k8s.appsaig.dev
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: headlamp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

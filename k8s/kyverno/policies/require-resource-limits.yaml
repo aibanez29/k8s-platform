@@ -1,0 +1,48 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      All containers must define CPU and memory limits. On a single-node cluster
+      there is nowhere for a runaway pod to be rescheduled — it starves the
+      kubelet and takes the node with it. Enforced, not audited.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-container-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              # Platform namespaces. Several of these charts ship without limits
+              # upstream, and enforcing here deadlocks the cluster: the admission
+              # webhook would reject the ingress, cert and secret plumbing that
+              # the rest of the platform is waiting on.
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - kyverno
+                - argocd
+                - ingress-nginx
+                - cert-manager
+                - sealed-secrets
+                - openbao
+      validate:
+        message: "CPU and memory limits are required for all containers."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"

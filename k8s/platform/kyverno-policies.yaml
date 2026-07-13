@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+  annotations:
+    # Wave 1: ClusterPolicy is a Kyverno CRD. Applying policies in the same wave
+    # as Kyverno itself is a race the policies lose.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/aibanez29/k8s-platform.git
+    targetRevision: main
+    path: k8s/kyverno/policies
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
