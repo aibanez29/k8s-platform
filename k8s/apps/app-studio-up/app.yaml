@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-studio-up
+  namespace: app-studio-up
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-studio-up
+  template:
+    metadata:
+      labels:
+        app: app-studio-up
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: app
+          image: ghcr.io/aibanez29/app-studio-up:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-studio-up-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-studio-up-secret
+                  key: JWT_SECRET
+            - name: DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-studio-up-secret
+                  key: DEEPSEEK_API_KEY
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-studio-up
+  namespace: app-studio-up
+spec:
+  selector:
+    app: app-studio-up
+  ports:
+    - port: 80
+      targetPort: 3000

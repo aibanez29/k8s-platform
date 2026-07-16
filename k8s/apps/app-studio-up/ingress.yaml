@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-studio-up
+  namespace: app-studio-up
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - studio.appsaig.dev
+      secretName: app-studio-up-tls
+  rules:
+    - host: studio.appsaig.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-studio-up
+                port:
+                  number: 80
