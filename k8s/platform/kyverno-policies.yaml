@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/aibanez29/k8s-platform.git
+    repoURL: https://github.com/aibanez29/k8s-platform-privado.git
     targetRevision: main
     path: k8s/kyverno/policies
   destination:
