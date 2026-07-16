@@ -23,14 +23,14 @@ spec:
           annotations:
             cert-manager.io/cluster-issuer: letsencrypt-prod
           hosts:
-            - host: k8s.appsaig.dev
+            - host: k8s.example.com
               paths:
                 - path: /
                   type: Prefix
           tls:
             - secretName: headlamp-tls
               hosts:
-                - k8s.appsaig.dev
+                - k8s.example.com
         resources:
           requests:
             cpu: 10m

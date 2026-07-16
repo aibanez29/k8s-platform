@@ -9,10 +9,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - studio.appsaig.dev
+        - studio.example.com
       secretName: app-studio-up-tls
   rules:
-    - host: studio.appsaig.dev
+    - host: studio.example.com
       http:
         paths:
           - path: /

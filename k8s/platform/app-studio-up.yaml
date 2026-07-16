@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/aibanez29/k8s-platform-privado.git
+    repoURL: https://github.com/your-org/k8s-platform.git
     targetRevision: main
     path: k8s/apps/app-studio-up
   destination:
